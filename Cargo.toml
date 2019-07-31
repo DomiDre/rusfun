@@ -12,3 +12,9 @@ edition = "2018"
 [dependencies]
 ndarray = "0.12.1"
 wasm-bindgen = "0.2"
+criterion = "0.2"
+
+
+[[bench]]
+name = "quick_benchmark"
+harness = false
