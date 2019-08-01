@@ -11,8 +11,6 @@ edition = "2018"
 
 [dependencies]
 ndarray = "0.12.1"
-rulinalg = "0.4.2"
-# rand = "0.7.0"
 wasm-bindgen = "0.2"
 criterion = "0.2"
 
