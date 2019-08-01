@@ -7,4 +7,4 @@ mod curve_fit;
 
 pub use crate::standard::parabola;
 pub use crate::func1d::Func1D;
-pub use crate::curve_fit::{Residuum, std_residuum, lm};
+pub use crate::curve_fit::{Residuum, std_residuum, Minimizer};

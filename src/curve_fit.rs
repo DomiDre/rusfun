@@ -35,17 +35,24 @@ pub fn std_residuum(resi: &Residuum) -> Array1<f64> {
 	(resi.y - &resi.model.output())/resi.sy
 }
 
-pub fn lm<'a>(
-	function: Residuum, // residuum fcn
-  model: &'a Func1D, y: &Array1<f64>, sy: &Array1<f64>, // model and data
-  ) -> Func1D<'a> {
-  
-  
+pub struct Minimizer<'a> {
+	pub residuum: Residuum<'a>,
+	pub num_func_evaluation: usize,
+}
 
+impl<'a> Minimizer<'a> {
+	pub fn lm(&mut self) -> Array1<f64> {
+		
+		let j = self.residuum.model.parameter_gradient();
+		let jt = j.t();
+		let A = j.dot(&jt);
+		let b = jt.dot(&self.residuum.output());
 
-  Func1D {
-    domain: model.domain,
-    parameters: model.parameters,
-    function: model.function
-  }
+		println!("{:?}", j);
+		self.num_func_evaluation += self.residuum.model.parameters.len();
+		//JT
+
+		self.residuum.model.domain.clone()
+	
+	}
 }
