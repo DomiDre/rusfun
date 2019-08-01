@@ -3,6 +3,7 @@ extern crate criterion;
 
 use criterion::Criterion;
 use ndarray::{array, Array1};
+use rulinalg::vector::Vector;
 
 fn calc_with_array() -> f64 {
     let mut a: [f64; 100] = [0.0; 100];
@@ -30,10 +31,18 @@ fn calc_with_array1() -> f64 {
     a.dot(&b)
 }
 
+
+fn calc_with_rulinalgvector() -> f64 {
+    let a: Vector<f64> = Vector::from_fn(100, |x| 1.0*(x as f64));
+    let b: Vector<f64> = Vector::from_fn(100, |x| 2.0*(x as f64));
+    a.dot(&b)
+}
+
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("calc with array", |b| b.iter(|| calc_with_array()));
     c.bench_function("calc with vec", |b| b.iter(|| calc_with_vec()));
     c.bench_function("calc with array1", |b| b.iter(|| calc_with_array1()));
+    c.bench_function("calc with rulinalg vector", |b| b.iter(|| calc_with_rulinalgvector()));
 }
 
 criterion_group!(benches, criterion_benchmark);
