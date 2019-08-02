@@ -14,7 +14,8 @@ pub fn chi2(residuum: &Array1<f64>) -> f64 {
 pub struct MinimizationStep {
 	parameters: Array1<f64>,
 	residuum:  Array1<f64>,
-	chi2: f64
+	chi2: f64,
+	metric: f64
 }
 
 pub struct Minimizer<'a> {
@@ -25,7 +26,13 @@ pub struct Minimizer<'a> {
 	pub lambda: f64,
 	pub num_func_evaluation: usize,
 	pub residuum: Array1<f64>,
-	pub chi2: f64
+	pub chi2: f64,
+	pub epsilon1: f64,
+	pub epsilon2: f64,
+	pub epsilon3: f64,
+	pub epsilon4: f64,
+	pub lambda_UP_fac: f64,
+	pub lambda_DOWN_fac: f64,
 }
 
 impl<'a> Minimizer<'a> {
@@ -44,6 +51,12 @@ impl<'a> Minimizer<'a> {
 			num_func_evaluation: 0,
 			residuum: initial_residuum,
 			chi2: chi2,
+			epsilon1: 1e-3,
+			epsilon2: 1e-3,
+			epsilon3: 1e-1,
+			epsilon4: 1e-1,
+			lambda_UP_fac: 11.0,
+			lambda_DOWN_fac: 9.0
 		}
 	}
 
@@ -88,20 +101,33 @@ impl<'a> Minimizer<'a> {
 			col *= 1.0/self.sy[i];
 		}
 
-		// calculate J^T W J - lambda*diag(J^T W J)  [lhs]
+		// calculate J^T W J + lambda*diag(J^T W J)  [lhs]
+		// first J^T W J
 		let mut A = jt.dot(&j);
+
+		// lambda*diag(J^T W J) is needed for the calculation of the metric
+		let mut gaussNewtonDiagonal: Array1<f64> = Array1::zeros(A.rows());
 		for i in 0..A.rows() {
-			A[[i, i]] = A[[i, i]] + self.lambda*A[[i, i]];
+			gaussNewtonDiagonal[i] = self.lambda*A[[i, i]];
+			// add to A to obtain lhs of LM step
+			A[[i, i]] += gaussNewtonDiagonal[i];
 		}
 
 		let delta: Array1<f64> = matrix_solve(&A, &b);
+		let mut metric = delta.dot(&b);
+		for i in 0..A.rows() {
+			metric +=  delta[i].powi(2)*gaussNewtonDiagonal[i];
+		}
+
 		let updated_parameters = self.minimizer_parameters.clone() + delta;
 		let updated_residuum = self.residuum(&updated_parameters);
 		let updated_chi2 = chi2(&updated_residuum);
+
 		MinimizationStep {
 			parameters: updated_parameters,
 			residuum: updated_residuum,
-			chi2: updated_chi2
+			chi2: updated_chi2,
+			metric: metric
 		}
 		
 	}
@@ -113,15 +139,19 @@ impl<'a> Minimizer<'a> {
 			let update_step = self.lm();
 			iterations += 1;
 			// compare chi2 before and after
-			if self.chi2 < update_step.chi2 {
-				// new chi2 is worse than before
-				self.lambda *= 2.0;
-			} else {
-				self.lambda /= 2.0;
+			let rho = (self.chi2 - update_step.chi2)/update_step.metric;
+
+			if rho > self.epsilon4 {
+				//new parameters are better
+				self.lambda = (self.lambda/self.lambda_DOWN_fac).max(1e-7);
 				// if update step is better, store new state
 				self.minimizer_parameters = update_step.parameters; 
 				self.residuum = update_step.residuum;
 				self.chi2 = update_step.chi2;
+
+			} else {
+				// new chi2 not good enough, increasing lambda
+				self.lambda = (self.lambda*self.lambda_UP_fac).min(1e7);
 			}
 		}
 	}
