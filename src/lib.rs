@@ -8,7 +8,7 @@ mod curve_fit;
 
 pub use crate::standard::parabola;
 pub use crate::func1d::Func1D;
-pub use crate::curve_fit::{Residuum, std_residuum, Minimizer};
+pub use crate::curve_fit::{Minimizer};
 pub use crate::utils::matrix_solve;
 
 
@@ -33,16 +33,12 @@ mod tests {
 			let y: Array1<f64> = x.map(|x| x.powi(2));
 			let sy: Array1<f64> = x.map(|x| 1.0);
 			let parab = Func1D::new(&p, &x, parabola);
-
-			let residuum = Residuum {
-					model: &parab,
-					y: &y,
-					sy: &sy,
-					function: std_residuum
-			};
+			let minimizer = Minimizer::init(
+				&parab, &y, &sy, 1.0
+			);
 			// account for finite-precision errors
 			assert_eq!((
-				(residuum.output().sum()*100.0).round()/100.0),
+				(minimizer.residuum(&p).sum()*100.0).round()/100.0),
 				x.map(|x| -0.1*x.powi(2)).sum()
 			);
     }
