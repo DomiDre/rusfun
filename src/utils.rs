@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 use ndarray::{Array, Axis, Array1, Array2, Zip, NdFloat, s};
 
 pub fn array1_to_vec<T>(array: Array1<T>) -> Vec<T>
@@ -10,13 +9,33 @@ where T: NdFloat {
     result
 }
 
-pub fn LU_decomp<T>(A: Array2<T>) -> (Array2<T>, Array2<T>, Array2<T>)
+pub fn matrix_solve<T>(A: &Array2<T>, b: &Array1<T>) -> Array1<T>
+where T: NdFloat {
+    let matrix_dimension = A.rows();
+    // solve Ax = b for x, where A is a square matrix
+    let (L, U, P) = LU_decomp(A);
+    // first solve Ly = Pb
+    let pivotized_b = P.dot(b);
+    let mut y: Array1<T> = pivotized_b.clone();
+    for i in 1..matrix_dimension {
+        y[i] = y[i] - L.slice(s![i, 0..i]).dot(&y.slice(s![0..i]));
+    }
+    // then solve Ux = y
+    let mut x: Array1<T> = y.clone();
+    x[matrix_dimension-1] = x[matrix_dimension-1] / U[[matrix_dimension-1, matrix_dimension-1]];
+    for i in (0..matrix_dimension-1).rev() {
+        x[i] = (x[i] - U.slice(s![i, i+1..matrix_dimension]).dot(&x.slice(s![i+1..matrix_dimension]))) / U[[i, i]];
+    }
+    x
+}
+
+pub fn LU_decomp<T>(A: &Array2<T>) -> (Array2<T>, Array2<T>, Array2<T>)
 where T: NdFloat {
 
     let matrix_dimension = A.rows();
     assert_eq!(matrix_dimension, A.cols(), "Tried LU decomposition with a non-square matrix.");
     let P = pivot(&A);
-    let pivotized_A = P.dot(&A);
+    let pivotized_A = P.dot(A);
 
     let mut L: Array2<T> = Array::eye(matrix_dimension);
     let mut U: Array2<T> = Array::zeros((matrix_dimension, matrix_dimension));
