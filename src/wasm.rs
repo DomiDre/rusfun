@@ -39,7 +39,7 @@ pub fn fit(model_name: &str, p: Vec<f64>, x: Vec<f64>, y: Vec<f64>, sy: Vec<f64>
   let arr_sy = Array1::from(sy);
 
   let func = func1d::Func1D::new(&arr_p, &arr_x, get_function(model_name));
-  let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, 1.0);
+  let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, 0.01);
   minimizer.minimize(10);
   array1_to_vec(minimizer.minimizer_parameters)
 }
