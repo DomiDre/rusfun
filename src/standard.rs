@@ -1,5 +1,9 @@
 use ndarray::Array1;
 
+pub fn zero(p: &Array1<f64>, x: &Array1<f64>) -> Array1<f64> {
+    x.map( |xval| 0.0)
+}
+
 pub fn linear(p: &Array1<f64>, x: &Array1<f64>) -> Array1<f64> {
     x.map( |xval| p[0] * xval + p[1])
 }
