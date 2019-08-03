@@ -132,7 +132,7 @@ impl<'a> Minimizer<'a> {
 		
 	}
 
-	pub fn minimize(&mut self, max_iterations: u32) {
+	pub fn minimize(&mut self, max_iterations: usize) {
 		let mut iterations = 0;
 
 		while iterations < max_iterations {

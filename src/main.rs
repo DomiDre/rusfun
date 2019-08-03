@@ -25,6 +25,6 @@ fn main() {
 
 	// fit data
 	let mut minimizer = Minimizer::init(&parab, &y, &sy, 1.0);
-	minimizer.minimize(10);
+	minimizer.minimize(10*p.len());
 	minimizer.report();
 }
