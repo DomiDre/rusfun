@@ -5,7 +5,6 @@ use crate::standard;
 use crate::func1d;
 use crate::curve_fit;
 
-extern crate wasm_bindgen;
 use wasm_bindgen::prelude::*;
 
 pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Array1<f64> {
@@ -32,7 +31,35 @@ pub fn parabola(p: Vec<f64>, x: Vec<f64>) -> Vec<f64> {
 }
 
 #[wasm_bindgen]
-pub fn fit(model_name: &str, p: Vec<f64>, x: Vec<f64>, y: Vec<f64>, sy: Vec<f64>) -> Vec<f64> {
+pub struct FitResult {
+	parameters: Vec<f64>,
+	num_func_evaluation: usize,
+	chi2: f64,
+	redchi2: f64,
+	convergence_message: String
+}
+
+#[wasm_bindgen]
+impl FitResult {
+  pub fn parameters(&self) -> Vec<f64> {
+    self.parameters.clone()
+  }
+  pub fn num_func_evaluation(&self) -> usize {
+    self.num_func_evaluation
+  }
+  pub fn chi2(&self) -> f64 {
+    self.chi2
+  }
+  pub fn redchi2(&self) -> f64 {
+    self.redchi2
+  }
+  pub fn convergence_message(&self) -> String {
+    self.convergence_message.clone()
+  }
+}
+
+#[wasm_bindgen]
+pub fn fit(model_name: &str, p: Vec<f64>, x: Vec<f64>, y: Vec<f64>, sy: Vec<f64>) -> FitResult {
   let arr_p = Array1::from(p);
   let arr_x = Array1::from(x);
   let arr_y = Array1::from(y);
@@ -41,5 +68,11 @@ pub fn fit(model_name: &str, p: Vec<f64>, x: Vec<f64>, y: Vec<f64>, sy: Vec<f64>
   let func = func1d::Func1D::new(&arr_p, &arr_x, get_function(model_name));
   let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, 0.01);
   minimizer.minimize(10*arr_p.len());
-  array1_to_vec(minimizer.minimizer_parameters)
+  FitResult {
+    parameters: array1_to_vec(minimizer.minimizer_parameters),
+    num_func_evaluation: minimizer.num_func_evaluation,
+    chi2: minimizer.chi2,
+    redchi2: minimizer.redchi2,
+    convergence_message: String::from(minimizer.convergence_message)
+  }
 }
