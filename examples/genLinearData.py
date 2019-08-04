@@ -1,12 +1,12 @@
 import numpy as np
 import random
 
-x = np.linspace(0, 10, 101)
+x = np.linspace(0, 10, 1001)
 a = 4.2
 b = 0.666
 
 y = a*x + b
-sig_y = 0.05*np.abs(y)
+sig_y = 1+0.05*np.abs(y)
 
 randomized_y = []
 for i in range(len(y)):
