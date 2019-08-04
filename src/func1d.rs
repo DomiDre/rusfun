@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, Array, s};
+use ndarray::{Array1, Array2, s};
 
 pub struct Func1D<'a> {
     pub parameters: &'a Array1<f64>,
@@ -26,11 +26,11 @@ impl<'a> Func1D<'a> {
         (self.function)(&parameters, &self.domain)
     }
 
-    pub fn parameter_gradient(&self, parameters: &Array1<f64>) -> Array2<f64> {
+    pub fn parameter_gradient(&self, parameters: &Array1<f64>, func_values: &Array1<f64>) -> Array2<f64> {
         let epsilon = std::f64::EPSILON.sqrt();
-        let mut jacobian: Array2<f64> = Array::zeros((self.parameters.len(), self.domain.len()));
+        let mut jacobian: Array2<f64> = Array2::zeros((self.parameters.len(), self.domain.len()));
 
-        let func_values = self.for_parameters(&parameters);
+        // let func_values = self.for_parameters(&parameters);
         for i in 0..parameters.len() {
             let mut shifted_parameters = parameters.clone();
             let mut shift = epsilon*shifted_parameters[i].abs();

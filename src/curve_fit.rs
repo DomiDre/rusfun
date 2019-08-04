@@ -1,34 +1,35 @@
 use crate::func1d::Func1D;
-use ndarray::Array1;
+use ndarray::{Array1, Array2, s};
 use crate::utils::matrix_solve;
 
-pub fn std_residuum(model: &Func1D, parameters: &Array1<f64>,
-y: &Array1<f64>, sy: &Array1<f64>) -> Array1<f64> {
-	(y - &model.for_parameters(&parameters))/sy
-}
-
-pub fn chi2(residuum: &Array1<f64>) -> f64 {
-	residuum.map(|x| x.powi(2)).sum()
+pub fn chi2(y: &Array1<f64>, ymodel: &Array1<f64>, sy: &Array1<f64>,) -> f64 {
+	((y - ymodel)/sy).map(|x| x.powi(2)).sum()
 }
 
 pub struct MinimizationStep {
 	parameters: Array1<f64>,
-	residuum:  Array1<f64>,
+	delta: Array1<f64>,
+	ymodel:  Array1<f64>,
 	chi2: f64,
 	redchi2: f64,
 	metric: f64,
 	metric_gradient: f64,
 	metric_parameters: f64,
+	JT_W_J: Array2<f64>
 }
 
 pub struct Minimizer<'a> {
 	pub model: &'a Func1D<'a>,
 	pub y: &'a Array1<f64>,
 	pub sy: &'a Array1<f64>,
+	pub weighting_matrix: Array1<f64>,
 	pub minimizer_parameters: Array1<f64>,
+	pub minimizer_ymodel: Array1<f64>,
+	pub jacobian: Array2<f64>,
 	pub lambda: f64,
 	pub num_func_evaluation: usize,
-	pub residuum: Array1<f64>,
+	pub num_params: usize,
+	pub num_data: usize,
 	pub chi2: f64,
 	pub dof: usize,
 	pub redchi2: f64,
@@ -45,19 +46,35 @@ impl<'a> Minimizer<'a> {
 
 	pub fn init<'b>(model: &'b Func1D, y: &'b Array1<f64>, sy: &'b Array1<f64>,
 		lambda: f64) -> Minimizer<'b> {
+
+		// at initialization 
 		let initial_parameters = model.parameters.clone();
-		let initial_residuum = std_residuum(&model, &initial_parameters, &y, &sy);
-		let chi2 = chi2(&initial_residuum);
-		let dof = model.domain.len() - initial_parameters.len();
+		let minimizer_ymodel = model.for_parameters(&initial_parameters);
+		let num_params = initial_parameters.len();
+		let num_data = model.domain.len();
+		let chi2 = chi2(&y, &minimizer_ymodel, &sy);
+		let dof = num_data - num_params;
 		let redchi2 = chi2 / (dof as f64);
+		
+		// initialize jacobian
+		// J is the parameter gradient of f at the current values
+		let j = model.parameter_gradient(&initial_parameters, &minimizer_ymodel);
+
+		// W = 1 / sy^2, only diagonal is considered
+		let weighting_matrix: Array1<f64> = sy.map(|x| 1.0/x.powi(2));
+
 		Minimizer {
 			model: &model,
 			y: &y,
 			sy: &sy,
+			weighting_matrix: weighting_matrix,
 			minimizer_parameters: initial_parameters,
+			minimizer_ymodel: minimizer_ymodel,
+			jacobian: j,
 			lambda: lambda,
 			num_func_evaluation: 0,
-			residuum: initial_residuum,
+			num_data: num_data,
+			num_params: num_params,
 			chi2: chi2,
 			dof: dof,
 			redchi2: redchi2,
@@ -71,10 +88,6 @@ impl<'a> Minimizer<'a> {
 		}
 	}
 
-	pub fn residuum(&self, parameters: &Array1<f64>) -> Array1<f64> {
-		std_residuum(&self.model, &parameters, &self.y, &self.sy)
-	}
-
 	pub fn lm(&mut self) -> MinimizationStep {
 		//performs a Levenberg Marquardt step
 
@@ -82,40 +95,36 @@ impl<'a> Minimizer<'a> {
 		// [J^T W J + lambda diag(J^T W J)] delta = J^T W (y - f)
 		// for delta
 
-		// J is the parameter gradient of f at the current values
-		let j = self.model.parameter_gradient(&self.minimizer_parameters);
+		// J^T is cloned to be multiplied by weighting_matrix later
+		let mut jt = self.jacobian.clone().reversed_axes();
 		
-		// println!("Parameter Gradient:\n{}", j);
-		self.num_func_evaluation += self.model.parameters.len() + 1;
-
-		// J^T is cloned to be multiplied by W later
-		let mut jt = j.clone().reversed_axes();
-		
-		// calculate J^T W (y - f) (rhs), where W (y - f) is just the residuum
-		let b = jt.dot(&self.residuum);
-
 		// multiply J^T with W to obtain J^T W
-		for i in 0..jt.cols() {
+		for i in 0..self.num_data {
 			let mut col = jt.column_mut(i);
-			col *= 1.0/self.sy[i];
+			col *= self.weighting_matrix[i];
 		}
 
-		// calculate J^T W J + lambda*diag(J^T W J)  [lhs]
+		// calculate J^T W (y - f) (rhs of LM step)
+		let b = jt.dot(&(self.y - &self.minimizer_ymodel));
+
+		// calculate J^T W J + lambda*diag(J^T W J)  [lhs of LM step]
 		// first J^T W J
-		let mut A = jt.dot(&j);
+		let JT_W_J = jt.dot(&self.jacobian);
 
-		// lambda*diag(J^T W J) is needed for the calculation of the metric
-		let mut gaussNewtonDiagonal: Array1<f64> = Array1::zeros(A.rows());
-		for i in 0..A.rows() {
-			gaussNewtonDiagonal[i] = self.lambda*A[[i, i]];
-			// add to A to obtain lhs of LM step
-			A[[i, i]] += gaussNewtonDiagonal[i];
+		let lambdaDiagJT_W_J = self.lambda*&JT_W_J.diag();
+		let mut A = JT_W_J.clone();
+		for i in 0..self.num_params {
+			A[[i, i]] += lambdaDiagJT_W_J[i];
 		}
 
+		// solve LM step for delta
 		let delta: Array1<f64> = matrix_solve(&A, &b);
+
+		// calculate metrics to determine convergence
 		let mut metric = delta.dot(&b);
-		for i in 0..A.rows() {
-			metric +=  delta[i].powi(2)*gaussNewtonDiagonal[i];
+
+		for i in 0..self.num_params {
+			metric +=  delta[i].powi(2)*lambdaDiagJT_W_J[i];
 		}
 
 		// take maximum of the absolute value in the respective arrays as metric for the
@@ -123,19 +132,21 @@ impl<'a> Minimizer<'a> {
 		let metric_gradient = b.map(|x| x.abs()).to_vec().iter().cloned().fold(0./0., f64::max);
 		let metric_parameters = (&delta / &self.minimizer_parameters).map(|x| x.abs()).to_vec().iter().cloned().fold(0./0., f64::max);;
 
-		let updated_parameters = self.minimizer_parameters.clone() + delta;
-		let updated_residuum = self.residuum(&updated_parameters);
-		let updated_chi2 = chi2(&updated_residuum);
+		let updated_parameters = &self.minimizer_parameters + &delta;
+		let updated_model = self.model.for_parameters(&updated_parameters);
+		let updated_chi2 = chi2(&self.y, &updated_model, &self.sy);
 		let redchi2 = updated_chi2 / (self.dof as f64);
 
 		MinimizationStep {
 			parameters: updated_parameters,
-			residuum: updated_residuum,
+			delta: delta,
+			ymodel: updated_model,
 			chi2: updated_chi2,
 			redchi2: redchi2,
 			metric: metric,
 			metric_gradient: metric_gradient,
-			metric_parameters: metric_parameters
+			metric_parameters: metric_parameters,
+			JT_W_J: JT_W_J
 		}
 		
 	}
@@ -146,15 +157,37 @@ impl<'a> Minimizer<'a> {
 		while iterations < max_iterations {
 			let update_step = self.lm();
 			iterations += 1;
-			// compare chi2 before and after
+
+			// compare chi2 before and after with respect to metric to decide if step is accepted
 			let rho = (self.chi2 - update_step.chi2)/update_step.metric;
 
 			if rho > self.epsilon4 {
-				//new parameters are better
+				//new parameters are better, update lambda
 				self.lambda = (self.lambda/self.lambda_DOWN_fac).max(1e-7);
-				// if update step is better, store new state
+
+				// update jacobian
+				if iterations % 2*self.num_params == 0 {
+					// at every 2*n steps update jacobian by explicit calculation
+					// requires #params function evaluations
+					self.jacobian = self.model.parameter_gradient(&self.minimizer_parameters, &self.minimizer_ymodel);
+					self.num_func_evaluation += self.num_params;
+				} else {
+					// otherwise update jacobian with Broyden rank-1 update formula
+					let norm_delta = update_step.delta.dot(&update_step.delta);
+					let diff = &update_step.ymodel - &self.minimizer_ymodel - self.jacobian.dot(&update_step.delta);
+					let mut jacobian_change: Array2<f64> = Array2::zeros((self.num_data, self.num_params));
+					
+					for i in 0..self.num_params {
+						let mut col_slice = jacobian_change.slice_mut(s![.., i]);
+						col_slice.assign(&(&diff * update_step.delta[i]/norm_delta));
+					}
+
+					self.jacobian = &self.jacobian + &jacobian_change;
+				}
+				
+				// store new state in Minimizer
 				self.minimizer_parameters = update_step.parameters; 
-				self.residuum = update_step.residuum;
+				self.minimizer_ymodel = update_step.ymodel;
 				self.chi2 = update_step.chi2;
 				self.redchi2 = update_step.redchi2;
 
@@ -179,6 +212,8 @@ impl<'a> Minimizer<'a> {
 			} else {
 				// new chi2 not good enough, increasing lambda
 				self.lambda = (self.lambda*self.lambda_UP_fac).min(1e7);
+				// step is rejected, update jacobian by explicit calculation
+				self.jacobian = self.model.parameter_gradient(&self.minimizer_parameters, &self.minimizer_ymodel);
 			}
 		}
 		if iterations >= max_iterations {

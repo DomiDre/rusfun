@@ -29,23 +29,6 @@ mod tests {
     }
 
 		#[test]
-		fn calculate_residuum() {
-			let p = array![1.1, 0.0, 0.0];
-			let x: Array1<f64> = Array1::range(0.0, 10.0, 1.0);
-			let y: Array1<f64> = x.map(|x| x.powi(2));
-			let sy: Array1<f64> = x.map(|x| 1.0);
-			let parab = Func1D::new(&p, &x, parabola);
-			let minimizer = Minimizer::init(
-				&parab, &y, &sy, 1.0
-			);
-			// account for finite-precision errors
-			assert_eq!((
-				(minimizer.residuum(&p).sum()*100.0).round()/100.0),
-				x.map(|x| -0.1*x.powi(2)).sum()
-			);
-    }
-
-		#[test]
 		fn solve_system_of_linear_equations() {
 			let A: Array2<f64> = array![
         [1.0, 3.0, 5.0],
