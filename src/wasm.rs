@@ -33,6 +33,7 @@ pub fn parabola(p: Vec<f64>, x: Vec<f64>) -> Vec<f64> {
 #[wasm_bindgen]
 pub struct FitResult {
 	parameters: Vec<f64>,
+	parameter_std_errors: Vec<f64>,
 	num_func_evaluation: usize,
 	chi2: f64,
 	redchi2: f64,
@@ -44,6 +45,11 @@ impl FitResult {
   pub fn parameters(&self) -> Vec<f64> {
     self.parameters.clone()
   }
+
+  pub fn parameter_std_errors(&self) -> Vec<f64> {
+    self.parameter_std_errors.clone()
+  }
+
   pub fn num_func_evaluation(&self) -> usize {
     self.num_func_evaluation
   }
@@ -70,6 +76,7 @@ pub fn fit(model_name: &str, p: Vec<f64>, x: Vec<f64>, y: Vec<f64>, sy: Vec<f64>
   minimizer.minimize(10*arr_p.len());
   FitResult {
     parameters: array1_to_vec(minimizer.minimizer_parameters),
+    parameter_std_errors: array1_to_vec(minimizer.parameter_errors),
     num_func_evaluation: minimizer.num_func_evaluation,
     chi2: minimizer.chi2,
     redchi2: minimizer.redchi2,

@@ -12,7 +12,7 @@ pub use crate::wasm::*;
 pub use crate::standard::parabola;
 pub use crate::func1d::Func1D;
 pub use crate::curve_fit::{Minimizer};
-pub use crate::utils::matrix_solve;
+pub use crate::utils::{LU_decomp, matrix_solve};
 
 #[cfg(test)]
 mod tests {

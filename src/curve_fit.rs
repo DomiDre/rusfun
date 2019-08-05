@@ -1,6 +1,6 @@
 use crate::func1d::Func1D;
 use ndarray::{Array1, Array2, s};
-use crate::utils::matrix_solve;
+use crate::utils::{matrix_solve, LU_decomp, LU_matrix_solve};
 
 pub fn chi2(y: &Array1<f64>, ymodel: &Array1<f64>, sy: &Array1<f64>,) -> f64 {
 	((y - ymodel)/sy).map(|x| x.powi(2)).sum()
@@ -26,6 +26,8 @@ pub struct Minimizer<'a> {
 	pub minimizer_parameters: Array1<f64>,
 	pub minimizer_ymodel: Array1<f64>,
 	pub jacobian: Array2<f64>,
+	pub parameter_cov_matrix: Array2<f64>,
+	pub parameter_errors: Array1<f64>,
 	pub lambda: f64,
 	pub num_func_evaluation: usize,
 	pub num_params: usize,
@@ -71,6 +73,8 @@ impl<'a> Minimizer<'a> {
 			minimizer_parameters: initial_parameters,
 			minimizer_ymodel: minimizer_ymodel,
 			jacobian: j,
+			parameter_cov_matrix: Array2::zeros((num_params,num_params)),
+			parameter_errors: Array1::zeros(num_params),
 			lambda: lambda,
 			num_func_evaluation: 0,
 			num_data: num_data,
@@ -153,8 +157,9 @@ impl<'a> Minimizer<'a> {
 
 	pub fn minimize(&mut self, max_iterations: usize) {
 		let mut iterations = 0;
+		let inverse_parameter_cov_matrix: Array2<f64>;
 
-		while iterations < max_iterations {
+		loop {
 			let update_step = self.lm();
 			iterations += 1;
 
@@ -195,20 +200,28 @@ impl<'a> Minimizer<'a> {
 				// gradient converged
 				if update_step.metric_gradient < self.epsilon1 { 
 					self.convergence_message = "Gradient converged";
+					inverse_parameter_cov_matrix = update_step.JT_W_J;
 					break 
 				};
 
 				// parameters converged
 				if update_step.metric_parameters < self.epsilon2 {
 					self.convergence_message = "Parameters converged";
+					inverse_parameter_cov_matrix = update_step.JT_W_J;
 					break
 				};
 
 				// chi2 converged
 				if update_step.redchi2 < self.epsilon3 {
 					self.convergence_message = "Chi2 converged";
+					inverse_parameter_cov_matrix = update_step.JT_W_J;
 					break
 				};
+				if iterations >= max_iterations {
+					self.convergence_message = "Reached max. number of iterations";
+					inverse_parameter_cov_matrix = update_step.JT_W_J;
+					break
+				}
 			} else {
 				// new chi2 not good enough, increasing lambda
 				self.lambda = (self.lambda*self.lambda_UP_fac).min(1e7);
@@ -216,19 +229,34 @@ impl<'a> Minimizer<'a> {
 				self.jacobian = self.model.parameter_gradient(&self.minimizer_parameters, &self.minimizer_ymodel);
 			}
 		}
-		if iterations >= max_iterations {
-			self.convergence_message = "Reached max. number of iterations";
+		
+
+		// calculate parameter covariance matrix using the LU decomposition
+		let (L, U, P) = LU_decomp(&inverse_parameter_cov_matrix);
+		for i in 0..self.num_params {
+			let mut unit_vector = Array1::zeros(self.num_params);
+			unit_vector[i] = 1.0;
+			let mut col_slice = self.parameter_cov_matrix.slice_mut(s![.., i]);
+			col_slice.assign(&LU_matrix_solve(&L, &U, &P, &unit_vector));
 		}
+		// parameter fit errors are the sqrt of the diagonal
+		self.parameter_errors = self.parameter_cov_matrix.diag().map(|x| x.sqrt());
+		
 	}
 
 	pub fn report(&self) {
-		println!("\t #Chi2:\t{}", self.chi2);
-		println!("\t #Red. Chi2:\t{}", self.redchi2);
+		println!("\t #Chi2:\t{:.6}", self.chi2);
+		println!("\t #Red. Chi2:\t{:.6}", self.redchi2);
 		println!("\t #Func. Evaluations:\t{}", self.num_func_evaluation);
 		println!("\t #Converged by:\t{}", self.convergence_message);
 		println!("---- Parameters ----");
 		for i in 0..self.minimizer_parameters.len() {
-			println!("{}\t(init: {:?})", self.minimizer_parameters[i], self.model.parameters[i]);
+			println!("{:.8} +/- {:.8} ({:.2} %)\t(init: {})",
+				self.minimizer_parameters[i],
+				self.parameter_errors[i],
+				(self.parameter_errors[i]/self.minimizer_parameters[i]).abs()*100.0,
+				self.model.parameters[i]
+			);
 		}
 	}
 }
