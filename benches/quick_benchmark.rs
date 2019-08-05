@@ -10,9 +10,9 @@ fn calc_with_array() -> f64 {
     let mut b: [f64; 100] = [0.0; 100];
     for i in 0..100 {
         a[i] = i as f64;
-        b[i] = 2.0*(i as f64);
+        b[i] = 2.0 * (i as f64);
     }
-    a.iter().zip(b.iter()).map(|(x, y)| x*y).sum()
+    a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
 }
 
 fn calc_with_vec() -> f64 {
@@ -20,9 +20,9 @@ fn calc_with_vec() -> f64 {
     let mut b: Vec<f64> = vec![0.0; 100];
     for i in 0..100 {
         a[i] = i as f64;
-        b[i] = 2.0*(i as f64);
+        b[i] = 2.0 * (i as f64);
     }
-    a.iter().zip(b.iter()).map(|(x, y)| x*y).sum()
+    a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
 }
 
 fn calc_with_array1() -> f64 {
@@ -30,7 +30,6 @@ fn calc_with_array1() -> f64 {
     let b: Array1<f64> = Array1::range(0.0, 200.0, 2.0);
     a.dot(&b)
 }
-
 
 // fn calc_with_rulinalgvector() -> f64 {
 //     let a: Vector<f64> = Vector::from_fn(100, |x| 1.0*(x as f64));
