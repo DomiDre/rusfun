@@ -2,6 +2,7 @@ use ndarray::Array1;
 
 use crate::curve_fit;
 use crate::func1d;
+use crate::size_distribution;
 use crate::standard;
 use crate::utils::array1_to_vec;
 
@@ -11,6 +12,7 @@ pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Ar
     match function_name {
         "linear" => standard::linear,
         "parabola" => standard::parabola,
+        "gaussian" => size_distribution::gaussian,
         _ => standard::zero,
     }
 }
@@ -25,13 +27,8 @@ pub fn calculate_model(
 }
 
 #[wasm_bindgen]
-pub fn linear(p: Vec<f64>, x: Vec<f64>) -> Vec<f64> {
-    calculate_model(p, x, standard::linear)
-}
-
-#[wasm_bindgen]
-pub fn parabola(p: Vec<f64>, x: Vec<f64>) -> Vec<f64> {
-    calculate_model(p, x, standard::parabola)
+pub fn model(function_name: &str, p: Vec<f64>, x: Vec<f64>) -> Vec<f64> {
+    calculate_model(p, x, get_function(function_name))
 }
 
 #[wasm_bindgen]
