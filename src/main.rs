@@ -6,7 +6,7 @@ mod utils;
 mod func1d;
 mod curve_fit;
 
-pub use crate::standard::{linear, parabola};
+pub use crate::standard::{linear, parabola, cos};
 pub use crate::func1d::Func1D;
 pub use crate::curve_fit::{Minimizer};
 pub use crate::utils::matrix_solve;
@@ -17,20 +17,26 @@ use std::io::{BufRead, BufReader, Result};
 
 fn main() {
 	// define the model
-	let p = array![4.2, 0.6];
+	// let p = array![1.0, 1.0];
+	let p = array![4.0, 1.0, 1.0];
+	// let p = array![2.5, 3.5, 1.0];
 
 	// read data
-	let (x, y, sy) = read_column_file("./examples/linearData.xye").unwrap();
+	// let (x, y, sy) = read_column_file("./examples/linearData.xye").unwrap();
+	let (x, y, sy) = read_column_file("./examples/parabolaData.xye").unwrap();
+	// let (x, y, sy) = read_column_file("./examples/cosData.xye").unwrap();
 	
 	let x = Array1::from_vec(x);
 	let y = Array1::from_vec(y);
 	let sy = Array1::from_vec(sy);
 
-	let parab = Func1D::new(&p, &x, linear);
+	let model = Func1D::new(&p, &x, parabola);
 
 	// fit data
-	let mut minimizer = Minimizer::init(&parab, &y, &sy, 1.0);
+	let mut minimizer = Minimizer::init(&model, &y, &sy, 1.0);
+	let t0 = std::time::Instant::now();
 	minimizer.minimize(10*p.len());
+	println!("Execution time: {} microsecs", t0.elapsed().as_micros());
 	minimizer.report();
 }
 
