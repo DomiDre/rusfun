@@ -2,10 +2,12 @@ use crate::func1d::Func1D;
 use crate::utils::{matrix_solve, LU_decomp, LU_matrix_solve};
 use ndarray::{s, Array1, Array2};
 
+/// Figure of merit that is minimized during the fit procedure
 pub fn chi2(y: &Array1<f64>, ymodel: &Array1<f64>, sy: &Array1<f64>) -> f64 {
     ((y - ymodel) / sy).map(|x| x.powi(2)).sum()
 }
 
+/// Contains all relevant information after one minimization step
 pub struct MinimizationStep {
     parameters: Array1<f64>,
     delta: Array1<f64>,
@@ -18,6 +20,12 @@ pub struct MinimizationStep {
     JT_W_J: Array2<f64>,
 }
 
+/// Container to perform a curve fit for model, given y and & sy
+/// 
+/// The Minimizer is used to initialize and perform a curve fit. For now only 1-dim
+/// functions and a Levenberg-Marquardt algorithm is implemented for test purposes.
+/// Results have only been verified on simple functions by comparison with
+/// an LM implementation from MINPACK.
 pub struct Minimizer<'a> {
     pub model: &'a Func1D<'a>,
     pub y: &'a Array1<f64>,
