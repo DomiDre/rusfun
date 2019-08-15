@@ -18,6 +18,7 @@ fn main() {
     // let p = array![4.0, 1.0, 1.0];
     // let p = array![2.5, 3.5, 1.0];
     let p = array![300.0, 3.0, 0.2, 0.0];
+    let vary_p = array![true, true, true, true];
 
     // read data
     // let (x, y, sy) = read_column_file("./linearData.xye").unwrap();
@@ -32,9 +33,9 @@ fn main() {
     let model = func1d::Func1D::new(&p, &x, size_distribution::gaussian);
 
     // fit data
-    let mut minimizer = curve_fit::Minimizer::init(&model, &y, &sy, 1.0);
+    let mut minimizer = curve_fit::Minimizer::init(&model, &y, &sy, &vary_p, 1.0);
     let t0 = std::time::Instant::now();
-    minimizer.minimize(10 * p.len());
+    minimizer.minimize();
     println!("Execution time: {} microsecs", t0.elapsed().as_micros());
     minimizer.report();
 }

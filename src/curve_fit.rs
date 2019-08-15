@@ -30,6 +30,7 @@ pub struct Minimizer<'a> {
     pub model: &'a Func1D<'a>,
     pub y: &'a Array1<f64>,
     pub sy: &'a Array1<f64>,
+    pub vary_parameter: &'a Array1<bool>,
     pub weighting_matrix: Array1<f64>,
     pub minimizer_parameters: Array1<f64>,
     pub minimizer_ymodel: Array1<f64>,
@@ -38,6 +39,7 @@ pub struct Minimizer<'a> {
     pub parameter_errors: Array1<f64>,
     pub lambda: f64,
     pub num_func_evaluation: usize,
+    pub max_iterations: usize,
     pub num_params: usize,
     pub num_data: usize,
     pub chi2: f64,
@@ -57,6 +59,7 @@ impl<'a> Minimizer<'a> {
         model: &'b Func1D,
         y: &'b Array1<f64>,
         sy: &'b Array1<f64>,
+        vary_parameter: &'b Array1<bool>,
         lambda: f64,
     ) -> Minimizer<'b> {
         // at initialization
@@ -79,6 +82,7 @@ impl<'a> Minimizer<'a> {
             model: &model,
             y: &y,
             sy: &sy,
+            vary_parameter: &vary_parameter,
             weighting_matrix: weighting_matrix,
             minimizer_parameters: initial_parameters,
             minimizer_ymodel: minimizer_ymodel,
@@ -87,6 +91,7 @@ impl<'a> Minimizer<'a> {
             parameter_errors: Array1::zeros(num_params),
             lambda: lambda,
             num_func_evaluation: 0,
+            max_iterations: 10 * num_params,
             num_data: num_data,
             num_params: num_params,
             chi2: chi2,
@@ -174,7 +179,7 @@ impl<'a> Minimizer<'a> {
         }
     }
 
-    pub fn minimize(&mut self, max_iterations: usize) {
+    pub fn minimize(&mut self) {
         let mut iterations = 0;
         let inverse_parameter_cov_matrix: Array2<f64>;
 
@@ -241,7 +246,7 @@ impl<'a> Minimizer<'a> {
                     inverse_parameter_cov_matrix = update_step.JT_W_J;
                     break;
                 };
-                if iterations >= max_iterations {
+                if iterations >= self.max_iterations {
                     self.convergence_message = "Reached max. number of iterations";
                     inverse_parameter_cov_matrix = update_step.JT_W_J;
                     break;

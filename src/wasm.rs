@@ -2,10 +2,10 @@ use ndarray::Array1;
 
 use crate::curve_fit;
 use crate::func1d;
+use crate::sas::*;
 use crate::size_distribution;
 use crate::standard;
 use crate::utils::array1_to_vec;
-use crate::sas::*;
 
 use wasm_bindgen::prelude::*;
 
@@ -68,15 +68,23 @@ impl FitResult {
 }
 
 #[wasm_bindgen]
-pub fn fit(model_name: &str, p: Vec<f64>, x: Vec<f64>, y: Vec<f64>, sy: Vec<f64>) -> FitResult {
+pub fn fit(
+    model_name: &str,
+    p: Vec<f64>,
+    x: Vec<f64>,
+    y: Vec<f64>,
+    sy: Vec<f64>,
+    vary_p: Vec<bool>,
+) -> FitResult {
     let arr_p = Array1::from(p);
     let arr_x = Array1::from(x);
     let arr_y = Array1::from(y);
     let arr_sy = Array1::from(sy);
+    let arr_vary_p = Array1::from(vary_p);
 
     let func = func1d::Func1D::new(&arr_p, &arr_x, get_function(model_name));
-    let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, 0.01);
-    minimizer.minimize(10 * arr_p.len());
+    let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, &arr_vary_p, 0.01);
+    minimizer.minimize();
 
     FitResult {
         parameters: array1_to_vec(minimizer.minimizer_parameters),
