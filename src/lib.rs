@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
- 
+
 ///Includes the Minimizer to optimize parameters of a model using the LM algorithm
 pub mod curve_fit;
 
