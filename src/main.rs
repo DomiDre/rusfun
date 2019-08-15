@@ -2,9 +2,9 @@
 #![allow(non_snake_case)]
 mod curve_fit;
 mod func1d;
+mod size_distribution;
 mod standard;
 mod utils;
-mod size_distribution;
 
 use ndarray::{array, Array1};
 use std::fs::File;

@@ -143,5 +143,4 @@ mod tests {
         let x = matrix_solve(&A, &b);
         assert_eq!(A.dot(&x), b);
     }
-
 }

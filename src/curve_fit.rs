@@ -21,7 +21,7 @@ pub struct MinimizationStep {
 }
 
 /// Container to perform a curve fit for model, given y and & sy
-/// 
+///
 /// The Minimizer is used to initialize and perform a curve fit. For now only 1-dim
 /// functions and a Levenberg-Marquardt algorithm is implemented for test purposes.
 /// Results have only been verified on simple functions by comparison with
