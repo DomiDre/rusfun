@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-
+ 
 ///Includes the Minimizer to optimize parameters of a model using the LM algorithm
 pub mod curve_fit;
 
@@ -17,3 +17,6 @@ pub mod utils;
 
 /// Interface module to enable the call of Rust functions using WASM
 pub mod wasm;
+
+// Add Small-Angle Scattering Module
+pub mod sas;

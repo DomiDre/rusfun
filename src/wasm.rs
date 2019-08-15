@@ -5,6 +5,7 @@ use crate::func1d;
 use crate::size_distribution;
 use crate::standard;
 use crate::utils::array1_to_vec;
+use crate::sas::*;
 
 use wasm_bindgen::prelude::*;
 
@@ -13,6 +14,7 @@ pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Ar
         "linear" => standard::linear,
         "parabola" => standard::parabola,
         "gaussian" => size_distribution::gaussian,
+        "sas_sphere" => sphere::formfactor,
         _ => standard::zero,
     }
 }
