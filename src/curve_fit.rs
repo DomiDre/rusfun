@@ -73,7 +73,7 @@ impl<'a> Minimizer<'a> {
 
         // initialize jacobian
         // J is the parameter gradient of f at the current values
-        let j = model.parameter_gradient(&initial_parameters, &minimizer_ymodel);
+        let j = model.parameter_gradient(&initial_parameters, &vary_parameter, &minimizer_ymodel);
 
         // W = 1 / sy^2, only diagonal is considered
         let weighting_matrix: Array1<f64> = sy.map(|x| 1.0 / x.powi(2));
@@ -198,9 +198,11 @@ impl<'a> Minimizer<'a> {
                 if iterations % 2 * self.num_params == 0 {
                     // at every 2*n steps update jacobian by explicit calculation
                     // requires #params function evaluations
-                    self.jacobian = self
-                        .model
-                        .parameter_gradient(&self.minimizer_parameters, &self.minimizer_ymodel);
+                    self.jacobian = self.model.parameter_gradient(
+                        &self.minimizer_parameters,
+                        &self.vary_parameter,
+                        &self.minimizer_ymodel,
+                    );
                     self.num_func_evaluation += self.num_params;
                 } else {
                     // otherwise update jacobian with Broyden rank-1 update formula
@@ -255,9 +257,11 @@ impl<'a> Minimizer<'a> {
                 // new chi2 not good enough, increasing lambda
                 self.lambda = (self.lambda * self.lambda_UP_fac).min(1e7);
                 // step is rejected, update jacobian by explicit calculation
-                self.jacobian = self
-                    .model
-                    .parameter_gradient(&self.minimizer_parameters, &self.minimizer_ymodel);
+                self.jacobian = self.model.parameter_gradient(
+                    &self.minimizer_parameters,
+                    &self.vary_parameter,
+                    &self.minimizer_ymodel,
+                );
             }
         }
 
