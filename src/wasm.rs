@@ -74,13 +74,17 @@ pub fn fit(
     x: Vec<f64>,
     y: Vec<f64>,
     sy: Vec<f64>,
-    vary_p: Vec<bool>,
+    vary_p: Vec<u8>,
 ) -> FitResult {
     let arr_p = Array1::from(p);
     let arr_x = Array1::from(x);
     let arr_y = Array1::from(y);
     let arr_sy = Array1::from(sy);
-    let arr_vary_p = Array1::from(vary_p);
+    let mut arr_vary_p: Vec<bool> = Vec::new();
+    for entry in vary_p {
+        arr_vary_p.push(entry > 0);
+    }
+    let arr_vary_p = Array1::from(arr_vary_p);
 
     let func = func1d::Func1D::new(&arr_p, &arr_x, get_function(model_name));
     let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, &arr_vary_p, 0.01);
