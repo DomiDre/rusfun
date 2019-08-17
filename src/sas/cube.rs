@@ -43,7 +43,7 @@ fn theta_integral(q: f64, a: f64, theta: f64, gl_quad: &GaussLegendre) -> f64 {
             a,
         )
         .powi(2)
-    })
+    })*sin_theta
 }
 
 /// Size distribution integral.
