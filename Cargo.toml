@@ -15,7 +15,7 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ndarray = "0.12.1"
 gauss-quad = "0.1.2"
-wasm-bindgen = "0.2.48"
+wasm-bindgen = "0.2.49"
 criterion = "0.2"
 
 [[bench]]
