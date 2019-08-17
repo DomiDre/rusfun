@@ -5,9 +5,9 @@ const PI_2: f64 = 1.5707963267948966;
 const SQ_2: f64 = 1.4142135623730951;
 const FRAC_SQ_PI: f64 = 0.56418958354775628;
 
-/// Formfactor Amplitude F of a Spherical Particle
+/// Formfactor Amplitude F of a Cube Particle
 ///
-/// See for example Jan Skov Pedersen, Advances in Colloid and Interface Science 1997, 70, 171. doi: 10.1016/S0001-8686(97)00312-6
+/// See for example http://gisaxs.com/index.php/Form_Factor:Cube
 fn amplitude(qx: f64, qy: f64, qz: f64, a: f64) -> f64 {
     a.powi(3) * sinc(0.5*qx * a) * sinc(0.5*qy * a) * sinc(0.5*qz * a)
 }
