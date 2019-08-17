@@ -298,7 +298,9 @@ impl<'a> Minimizer<'a> {
         let mut all_errors: Array1<f64> = Array1::zeros(self.num_params);
         for i in 0..self.num_params {
             if self.vary_parameter[i] {
-                all_errors[i] = (self.parameter_cov_matrix[[idx_vary_param, idx_vary_param]]*self.redchi2).sqrt();
+                all_errors[i] = (self.parameter_cov_matrix[[idx_vary_param, idx_vary_param]]
+                    * self.redchi2)
+                    .sqrt();
                 idx_vary_param += 1;
             }
         }
@@ -321,10 +323,7 @@ impl<'a> Minimizer<'a> {
                     self.model.parameters[i]
                 );
             } else {
-                println!(
-                    "{:.8}",
-                    self.minimizer_parameters[i]
-                );
+                println!("{:.8}", self.minimizer_parameters[i]);
             }
         }
     }

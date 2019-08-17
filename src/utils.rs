@@ -144,7 +144,7 @@ pub fn read_column_file(filename: &str) -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)
     for line in reader.lines() {
         let unwrapped_line = line.unwrap();
         if unwrapped_line.starts_with('#') {
-            continue
+            continue;
         }
         let splitted_line = unwrapped_line.split_whitespace();
         for (i, number) in splitted_line.enumerate() {
