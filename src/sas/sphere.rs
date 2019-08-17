@@ -34,9 +34,9 @@ fn size_distributed_formfactor(q: f64, R: f64, sigR: f64, gh_quad: &GaussHermite
 pub fn formfactor(p: &Array1<f64>, q: &Array1<f64>) -> Array1<f64> {
     let I0 = p[0];
     let R = p[1];
-    let sigR = p[1];
-    let SLDsphere = p[2];
-    let SLDmatrix = p[3];
+    let sigR = p[2];
+    let SLDsphere = p[3];
+    let SLDmatrix = p[4];
     let deg = p[5] as usize;
 
     let I: Array1<f64>;
