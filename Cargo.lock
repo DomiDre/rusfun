@@ -521,7 +521,7 @@ dependencies = [
 
 [[package]]
 name = "rusfun"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "criterion 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "gauss-quad 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
