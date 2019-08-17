@@ -13,8 +13,14 @@ pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Ar
     match function_name {
         "linear" => standard::linear,
         "parabola" => standard::parabola,
+        "sqrt" => standard::sqrt,
+        "cos" => standard::cos,
+        "sin" => standard::sin,
+        "tan" => standard::tan,
+        "exp" => standard::exp,
         "gaussian" => size_distribution::gaussian,
         "sas_sphere" => sphere::formfactor,
+        "sas_cube" => cube::formfactor,
         _ => standard::zero,
     }
 }
