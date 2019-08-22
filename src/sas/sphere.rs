@@ -30,6 +30,7 @@ fn size_distributed_formfactor(q: f64, R: f64, sigR: f64, gh_quad: &GaussHermite
 /// Formfactor of a spherical particle
 ///
 /// P = N/V * V_p^2 * DeltaSLD^2 * F^2
+/// F = 3 (qRsin(qR) - cos(qR))/(qR)^3
 /// Additionally a size distribution average is performed
 pub fn formfactor(p: &Array1<f64>, q: &Array1<f64>) -> Array1<f64> {
     let I0 = p[0];
