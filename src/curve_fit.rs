@@ -21,7 +21,7 @@ pub struct MinimizationStep {
 }
 
 /// Container to perform a curve fit for model, given y and & sy
-/// 
+///
 /// The Minimizer is used to initialize and perform a curve fit. For now only 1-dim
 /// functions and a Levenberg-Marquardt algorithm is implemented for test purposes.
 /// Results have only been verified on simple functions by comparison with
@@ -30,6 +30,7 @@ pub struct Minimizer<'a> {
     pub model: &'a Func1D<'a>,
     pub y: &'a Array1<f64>,
     pub sy: &'a Array1<f64>,
+    pub vary_parameter: &'a Array1<bool>,
     pub weighting_matrix: Array1<f64>,
     pub minimizer_parameters: Array1<f64>,
     pub minimizer_ymodel: Array1<f64>,
@@ -38,6 +39,8 @@ pub struct Minimizer<'a> {
     pub parameter_errors: Array1<f64>,
     pub lambda: f64,
     pub num_func_evaluation: usize,
+    pub max_iterations: usize,
+    pub num_varying_params: usize,
     pub num_params: usize,
     pub num_data: usize,
     pub chi2: f64,
@@ -57,20 +60,26 @@ impl<'a> Minimizer<'a> {
         model: &'b Func1D,
         y: &'b Array1<f64>,
         sy: &'b Array1<f64>,
+        vary_parameter: &'b Array1<bool>,
         lambda: f64,
     ) -> Minimizer<'b> {
         // at initialization
         let initial_parameters = model.parameters.clone();
         let minimizer_ymodel = model.for_parameters(&initial_parameters);
+
+        // calculate number of parameters that are being varied
+        let num_varying_params = vary_parameter
+            .iter()
+            .fold(0, |sum, val| if *val { sum + 1 } else { sum });
         let num_params = initial_parameters.len();
         let num_data = model.domain.len();
         let chi2 = chi2(&y, &minimizer_ymodel, &sy);
-        let dof = num_data - num_params;
+        let dof = num_data - num_varying_params;
         let redchi2 = chi2 / (dof as f64);
 
         // initialize jacobian
         // J is the parameter gradient of f at the current values
-        let j = model.parameter_gradient(&initial_parameters, &minimizer_ymodel);
+        let j = model.parameter_gradient(&initial_parameters, &vary_parameter, &minimizer_ymodel);
 
         // W = 1 / sy^2, only diagonal is considered
         let weighting_matrix: Array1<f64> = sy.map(|x| 1.0 / x.powi(2));
@@ -79,15 +88,18 @@ impl<'a> Minimizer<'a> {
             model: &model,
             y: &y,
             sy: &sy,
+            vary_parameter: &vary_parameter,
             weighting_matrix: weighting_matrix,
             minimizer_parameters: initial_parameters,
             minimizer_ymodel: minimizer_ymodel,
             jacobian: j,
-            parameter_cov_matrix: Array2::zeros((num_params, num_params)),
+            parameter_cov_matrix: Array2::zeros((num_varying_params, num_varying_params)),
             parameter_errors: Array1::zeros(num_params),
             lambda: lambda,
             num_func_evaluation: 0,
+            max_iterations: 10 * num_varying_params,
             num_data: num_data,
+            num_varying_params: num_varying_params,
             num_params: num_params,
             chi2: chi2,
             dof: dof,
@@ -127,17 +139,27 @@ impl<'a> Minimizer<'a> {
 
         let lambdaDiagJT_W_J = self.lambda * &JT_W_J.diag();
         let mut A = JT_W_J.clone();
-        for i in 0..self.num_params {
+        for i in 0..self.num_varying_params {
             A[[i, i]] += lambdaDiagJT_W_J[i];
         }
 
         // solve LM step for delta
         let delta: Array1<f64> = matrix_solve(&A, &b);
 
+        // create delta with length of total number of parameters
+        let mut delta_all: Array1<f64> = Array1::zeros(self.num_params);
+        let mut idx_vary_param = 0;
+        for i in 0..self.num_params {
+            if self.vary_parameter[i] {
+                delta_all[i] = delta[idx_vary_param];
+                idx_vary_param += 1;
+            }
+        }
+
         // calculate metrics to determine convergence
         let mut metric = delta.dot(&b);
 
-        for i in 0..self.num_params {
+        for i in 0..self.num_varying_params {
             metric += delta[i].powi(2) * lambdaDiagJT_W_J[i];
         }
 
@@ -149,14 +171,16 @@ impl<'a> Minimizer<'a> {
             .iter()
             .cloned()
             .fold(0. / 0., f64::max);
-        let metric_parameters = (&delta / &self.minimizer_parameters)
+
+        let metric_parameters = (&delta_all / &self.minimizer_parameters)
             .map(|x| x.abs())
             .to_vec()
             .iter()
             .cloned()
             .fold(0. / 0., f64::max);;
 
-        let updated_parameters = &self.minimizer_parameters + &delta;
+        let updated_parameters = &self.minimizer_parameters + &delta_all;
+
         let updated_model = self.model.for_parameters(&updated_parameters);
         let updated_chi2 = chi2(&self.y, &updated_model, &self.sy);
         let redchi2 = updated_chi2 / (self.dof as f64);
@@ -174,7 +198,7 @@ impl<'a> Minimizer<'a> {
         }
     }
 
-    pub fn minimize(&mut self, max_iterations: usize) {
+    pub fn minimize(&mut self) {
         let mut iterations = 0;
         let inverse_parameter_cov_matrix: Array2<f64>;
 
@@ -190,13 +214,15 @@ impl<'a> Minimizer<'a> {
                 self.lambda = (self.lambda / self.lambda_DOWN_fac).max(1e-7);
 
                 // update jacobian
-                if iterations % 2 * self.num_params == 0 {
+                if iterations % 2 * self.num_varying_params == 0 {
                     // at every 2*n steps update jacobian by explicit calculation
                     // requires #params function evaluations
-                    self.jacobian = self
-                        .model
-                        .parameter_gradient(&self.minimizer_parameters, &self.minimizer_ymodel);
-                    self.num_func_evaluation += self.num_params;
+                    self.jacobian = self.model.parameter_gradient(
+                        &self.minimizer_parameters,
+                        &self.vary_parameter,
+                        &self.minimizer_ymodel,
+                    );
+                    self.num_func_evaluation += self.num_varying_params;
                 } else {
                     // otherwise update jacobian with Broyden rank-1 update formula
                     let norm_delta = update_step.delta.dot(&update_step.delta);
@@ -204,9 +230,9 @@ impl<'a> Minimizer<'a> {
                         - &self.minimizer_ymodel
                         - self.jacobian.dot(&update_step.delta);
                     let mut jacobian_change: Array2<f64> =
-                        Array2::zeros((self.num_data, self.num_params));
+                        Array2::zeros((self.num_data, self.num_varying_params));
 
-                    for i in 0..self.num_params {
+                    for i in 0..self.num_varying_params {
                         let mut col_slice = jacobian_change.slice_mut(s![.., i]);
                         col_slice.assign(&(&diff * update_step.delta[i] / norm_delta));
                     }
@@ -241,7 +267,7 @@ impl<'a> Minimizer<'a> {
                     inverse_parameter_cov_matrix = update_step.JT_W_J;
                     break;
                 };
-                if iterations >= max_iterations {
+                if iterations >= self.max_iterations {
                     self.convergence_message = "Reached max. number of iterations";
                     inverse_parameter_cov_matrix = update_step.JT_W_J;
                     break;
@@ -250,22 +276,35 @@ impl<'a> Minimizer<'a> {
                 // new chi2 not good enough, increasing lambda
                 self.lambda = (self.lambda * self.lambda_UP_fac).min(1e7);
                 // step is rejected, update jacobian by explicit calculation
-                self.jacobian = self
-                    .model
-                    .parameter_gradient(&self.minimizer_parameters, &self.minimizer_ymodel);
+                self.jacobian = self.model.parameter_gradient(
+                    &self.minimizer_parameters,
+                    &self.vary_parameter,
+                    &self.minimizer_ymodel,
+                );
             }
         }
 
         // calculate parameter covariance matrix using the LU decomposition
         let (L, U, P) = LU_decomp(&inverse_parameter_cov_matrix);
-        for i in 0..self.num_params {
-            let mut unit_vector = Array1::zeros(self.num_params);
+        for i in 0..self.num_varying_params {
+            let mut unit_vector = Array1::zeros(self.num_varying_params);
             unit_vector[i] = 1.0;
             let mut col_slice = self.parameter_cov_matrix.slice_mut(s![.., i]);
             col_slice.assign(&LU_matrix_solve(&L, &U, &P, &unit_vector));
         }
         // parameter fit errors are the sqrt of the diagonal
-        self.parameter_errors = self.parameter_cov_matrix.diag().map(|x| x.sqrt());
+
+        let mut idx_vary_param = 0;
+        let mut all_errors: Array1<f64> = Array1::zeros(self.num_params);
+        for i in 0..self.num_params {
+            if self.vary_parameter[i] {
+                all_errors[i] = (self.parameter_cov_matrix[[idx_vary_param, idx_vary_param]]
+                    * self.redchi2)
+                    .sqrt();
+                idx_vary_param += 1;
+            }
+        }
+        self.parameter_errors = all_errors;
     }
 
     pub fn report(&self) {
@@ -275,13 +314,17 @@ impl<'a> Minimizer<'a> {
         println!("\t #Converged by:\t{}", self.convergence_message);
         println!("---- Parameters ----");
         for i in 0..self.minimizer_parameters.len() {
-            println!(
-                "{:.8} +/- {:.8} ({:.2} %)\t(init: {})",
-                self.minimizer_parameters[i],
-                self.parameter_errors[i],
-                (self.parameter_errors[i] / self.minimizer_parameters[i]).abs() * 100.0,
-                self.model.parameters[i]
-            );
+            if self.vary_parameter[i] {
+                println!(
+                    "{:.8} +/- {:.8} ({:.2} %)\t(init: {})",
+                    self.minimizer_parameters[i],
+                    self.parameter_errors[i],
+                    (self.parameter_errors[i] / self.minimizer_parameters[i]).abs() * 100.0,
+                    self.model.parameters[i]
+                );
+            } else {
+                println!("{:.8}", self.minimizer_parameters[i]);
+            }
         }
     }
 }

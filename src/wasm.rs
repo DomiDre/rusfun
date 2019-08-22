@@ -2,6 +2,7 @@ use ndarray::Array1;
 
 use crate::curve_fit;
 use crate::func1d;
+use crate::sas::*;
 use crate::size_distribution;
 use crate::standard;
 use crate::utils::array1_to_vec;
@@ -12,7 +13,14 @@ pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Ar
     match function_name {
         "linear" => standard::linear,
         "parabola" => standard::parabola,
+        "sqrt" => standard::sqrt,
+        "cos" => standard::cos,
+        "sin" => standard::sin,
+        "tan" => standard::tan,
+        "exp" => standard::exp,
         "gaussian" => size_distribution::gaussian,
+        "sas_sphere" => sphere::formfactor,
+        "sas_cube" => cube::formfactor,
         _ => standard::zero,
     }
 }
@@ -66,15 +74,27 @@ impl FitResult {
 }
 
 #[wasm_bindgen]
-pub fn fit(model_name: &str, p: Vec<f64>, x: Vec<f64>, y: Vec<f64>, sy: Vec<f64>) -> FitResult {
+pub fn fit(
+    model_name: &str,
+    p: Vec<f64>,
+    x: Vec<f64>,
+    y: Vec<f64>,
+    sy: Vec<f64>,
+    vary_p: Vec<u8>,
+) -> FitResult {
     let arr_p = Array1::from(p);
     let arr_x = Array1::from(x);
     let arr_y = Array1::from(y);
     let arr_sy = Array1::from(sy);
+    let mut arr_vary_p: Vec<bool> = Vec::new();
+    for entry in vary_p {
+        arr_vary_p.push(entry > 0);
+    }
+    let arr_vary_p = Array1::from(arr_vary_p);
 
     let func = func1d::Func1D::new(&arr_p, &arr_x, get_function(model_name));
-    let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, 0.01);
-    minimizer.minimize(10 * arr_p.len());
+    let mut minimizer = curve_fit::Minimizer::init(&func, &arr_y, &arr_sy, &arr_vary_p, 0.01);
+    minimizer.minimize();
 
     FitResult {
         parameters: array1_to_vec(minimizer.minimizer_parameters),

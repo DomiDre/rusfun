@@ -27,27 +27,47 @@ impl<'a> Func1D<'a> {
         (self.function)(&parameters, &self.domain)
     }
 
+    /// Calculates the gradient of the function with respect to its parameters
     pub fn parameter_gradient(
         &self,
-        parameters: &Array1<f64>,
-        func_values: &Array1<f64>,
+        parameters: &Array1<f64>,         // parameter values of the model
+        include_parameter: &Array1<bool>, // which parameters to evaluate
+        func_values: &Array1<f64>,        // function values for given parameters
     ) -> Array2<f64> {
         let epsilon = std::f64::EPSILON.sqrt();
-        let mut jacobian: Array2<f64> = Array2::zeros((self.parameters.len(), self.domain.len()));
 
-        // let func_values = self.for_parameters(&parameters);
+        // calculate number of parameters that are being varied
+        let num_varying_params = include_parameter
+            .iter()
+            .fold(0, |sum, val| if *val { sum + 1 } else { sum });
+
+        // initialize the jacobian as zero matrix Np x Nx
+        let mut jacobian: Array2<f64> = Array2::zeros((num_varying_params, self.domain.len()));
+
+        let mut idx_param = 0;
         for i in 0..parameters.len() {
-            let mut shifted_parameters = parameters.clone();
-            let mut shift = epsilon * shifted_parameters[i].abs();
-            if shift == 0.0 {
-                shift = epsilon
-            };
-            shifted_parameters[i] += shift;
-            let shifted_func_values = self.for_parameters(&shifted_parameters);
-            let mut row_slice = jacobian.slice_mut(s![i, ..]);
-            let derivative: Array1<f64> = (shifted_func_values - func_values.clone()) / shift;
-            row_slice.assign(&derivative);
+            if include_parameter[i] {
+                // shift parameter by a small value to evaluate derivative
+                let mut shifted_parameters = parameters.clone();
+                let mut shift = epsilon * shifted_parameters[i].abs();
+                if shift == 0.0 {
+                    shift = epsilon
+                };
+                shifted_parameters[i] += shift;
+
+                // calculate function values for shifted parameter f(x; p + delta)
+                let shifted_func_values = self.for_parameters(&shifted_parameters);
+                // derivative is eval as [f(x; p + delta) - f(x; p)]/delta
+                let derivative: Array1<f64> = (shifted_func_values - func_values.clone()) / shift;
+
+                // set derivative to row of jacobian
+                let mut row_slice = jacobian.slice_mut(s![idx_param, ..]);
+                row_slice.assign(&derivative);
+                idx_param += 1;
+            }
         }
+
+        // return jacobian with derivatives on the columns
         jacobian.reversed_axes()
     }
 }

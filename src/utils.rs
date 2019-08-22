@@ -1,5 +1,8 @@
 use ndarray::{s, Array, Array1, Array2, Axis, NdFloat, Zip};
 
+use std::fs::File;
+use std::io::{BufRead, BufReader, Result};
+
 pub fn array1_to_vec<T>(array: Array1<T>) -> Vec<T>
 where
     T: NdFloat,
@@ -131,6 +134,31 @@ where
     Zip::from(row0).and(row1).apply(std::mem::swap);
 }
 
+pub fn read_column_file(filename: &str) -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)> {
+    let mut x: Vec<f64> = Vec::new();
+    let mut y: Vec<f64> = Vec::new();
+    let mut sy: Vec<f64> = Vec::new();
+
+    let reader = BufReader::new(File::open(filename).expect("Cannot open file"));
+
+    for line in reader.lines() {
+        let unwrapped_line = line.unwrap();
+        if unwrapped_line.starts_with('#') {
+            continue;
+        }
+        let splitted_line = unwrapped_line.split_whitespace();
+        for (i, number) in splitted_line.enumerate() {
+            match i {
+                0 => x.push(number.parse().unwrap()),
+                1 => y.push(number.parse().unwrap()),
+                2 => sy.push(number.parse().unwrap()),
+                _ => {}
+            }
+        }
+    }
+    Ok((x, y, sy))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -143,5 +171,4 @@ mod tests {
         let x = matrix_solve(&A, &b);
         assert_eq!(A.dot(&x), b);
     }
-
 }
