@@ -9,6 +9,7 @@ use crate::utils::array1_to_vec;
 
 use wasm_bindgen::prelude::*;
 
+/// Translates a string to a implemented function in rusfun to make them easily callable
 pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Array1<f64> {
     match function_name {
         "linear" => standard::linear,
@@ -25,20 +26,23 @@ pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Ar
     }
 }
 
+/// Interface function between input from wasm as Vec<f64> to crate with Array1<f64>
 pub fn calculate_model(
     p: Vec<f64>,
     x: Vec<f64>,
     model: fn(&Array1<f64>, &Array1<f64>) -> Array1<f64>,
 ) -> Vec<f64> {
-    // interface function between input from wasm as Vec<f64> to crate with Array1<f64>
     array1_to_vec((model)(&Array1::from(p), &Array1::from(x)))
 }
 
+/// Calls Rust defined model functions by their function name for given parameters and a domain
 #[wasm_bindgen]
 pub fn model(function_name: &str, p: Vec<f64>, x: Vec<f64>) -> Vec<f64> {
     calculate_model(p, x, get_function(function_name))
 }
 
+/// The returned fit result from a fit() call
+/// Fields need to be accessed in JS by their getter functions that have the same name
 #[wasm_bindgen]
 pub struct FitResult {
     parameters: Vec<f64>,
@@ -73,6 +77,9 @@ impl FitResult {
     }
 }
 
+/// Fit using the LM algorithm for model named model_name using initial 
+/// parameters p, data (x, y, sy), fitting only where there is a non-zero
+/// value in vary_p
 #[wasm_bindgen]
 pub fn fit(
     model_name: &str,

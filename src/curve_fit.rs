@@ -56,6 +56,7 @@ pub struct Minimizer<'a> {
 }
 
 impl<'a> Minimizer<'a> {
+    /// Initializes the LM-algorithm. Performs first calculation of model & gradient
     pub fn init<'b>(
         model: &'b Func1D,
         y: &'b Array1<f64>,
@@ -114,13 +115,12 @@ impl<'a> Minimizer<'a> {
         }
     }
 
+    /// Performs a Levenberg Marquardt step
+    /// 
+    /// determine change to parameters by solving the equation
+    /// [J^T W J + lambda diag(J^T W J)] delta = J^T W (y - f)
+    /// for delta
     pub fn lm(&mut self) -> MinimizationStep {
-        //performs a Levenberg Marquardt step
-
-        // determine change to parameters by solving the equation
-        // [J^T W J + lambda diag(J^T W J)] delta = J^T W (y - f)
-        // for delta
-
         // J^T is cloned to be multiplied by weighting_matrix later
         let mut jt = self.jacobian.clone().reversed_axes();
 
@@ -198,6 +198,9 @@ impl<'a> Minimizer<'a> {
         }
     }
 
+    /// Fit routine that performs LM steps until one convergence criteria is met
+    /// 
+    /// Follows the description from http://people.duke.edu/~hpgavin/ce281/lm.pdf
     pub fn minimize(&mut self) {
         let mut iterations = 0;
         let inverse_parameter_cov_matrix: Array2<f64>;
@@ -307,6 +310,7 @@ impl<'a> Minimizer<'a> {
         self.parameter_errors = all_errors;
     }
 
+    /// Prints report of a performed fit
     pub fn report(&self) {
         println!("\t #Chi2:\t{:.6}", self.chi2);
         println!("\t #Red. Chi2:\t{:.6}", self.redchi2);

@@ -1,5 +1,6 @@
 use ndarray::{s, Array1, Array2};
 
+/// Contains reference to initial parameters p, the domain x and the function that maps both to f(p, x) = y
 pub struct Func1D<'a> {
     pub parameters: &'a Array1<f64>,
     pub domain: &'a Array1<f64>,
@@ -7,6 +8,7 @@ pub struct Func1D<'a> {
 }
 
 impl<'a> Func1D<'a> {
+    /// Initialize a Func1D by a reference to the parameters p, the domain x and a function to maps fn(p, x) -> y
     pub fn new(
         parameters: &'a Array1<f64>,
         domain: &'a Array1<f64>,
@@ -19,10 +21,12 @@ impl<'a> Func1D<'a> {
         }
     }
 
+    /// Performs calculation of f(p, x) using the initial parameters p
     pub fn output(&self) -> Array1<f64> {
         (self.function)(&self.parameters, &self.domain)
     }
 
+    /// Performs calculation of f(p, x) using the given set of parameters
     pub fn for_parameters(&self, parameters: &Array1<f64>) -> Array1<f64> {
         (self.function)(&parameters, &self.domain)
     }

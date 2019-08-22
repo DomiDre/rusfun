@@ -66,7 +66,8 @@ fn size_distributed_formfactor(
 /// Formfactor of a cubically shaped particle
 ///
 /// P = N/V * V_p^2 * DeltaSLD^2 * F^2
-/// Additionally a size distribution average is performed
+/// F = sinc(q_x*a/2)*sinc(q_y*a/2)*sinc(q_z*a/2)
+/// Additionally a orientation & size distribution average is performed
 pub fn formfactor(p: &Array1<f64>, q: &Array1<f64>) -> Array1<f64> {
     let I0 = p[0];
     let a = p[1];

@@ -3,6 +3,7 @@ use ndarray::{s, Array, Array1, Array2, Axis, NdFloat, Zip};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Result};
 
+/// Transforms a ndarray Array1 to a vec
 pub fn array1_to_vec<T>(array: Array1<T>) -> Vec<T>
 where
     T: NdFloat,
@@ -14,6 +15,7 @@ where
     result
 }
 
+/// Solves linear equation A*x = b by LU decomposition
 pub fn matrix_solve<T>(A: &Array2<T>, b: &Array1<T>) -> Array1<T>
 where
     T: NdFloat,
@@ -40,6 +42,7 @@ where
     x
 }
 
+/// Solves linear equation A*x = b where the partial pivoted LU decomposition of PA = LU is given
 pub fn LU_matrix_solve<T>(L: &Array2<T>, U: &Array2<T>, P: &Array2<T>, b: &Array1<T>) -> Array1<T>
 where
     T: NdFloat,
@@ -64,6 +67,9 @@ where
     x
 }
 
+/// Performs partial pivoted LU decomposition of A such that P A = LU
+/// with L a lower triangular matrix and U an upper triangular matrix
+/// A needs to be a square matrix
 pub fn LU_decomp<T>(A: &Array2<T>) -> (Array2<T>, Array2<T>, Array2<T>)
 where
     T: NdFloat,
@@ -97,6 +103,7 @@ where
     (L, U, P)
 }
 
+/// Pivot matrix A
 fn pivot<T>(A: &Array2<T>) -> Array2<T>
 where
     T: NdFloat,
@@ -119,6 +126,7 @@ where
     P
 }
 
+/// Swaps two rows of a matrix
 fn swap_rows<T>(A: &mut Array2<T>, idx_row1: usize, idx_row2: usize)
 where
     T: NdFloat,
@@ -134,6 +142,7 @@ where
     Zip::from(row0).and(row1).apply(std::mem::swap);
 }
 
+/// Reads three-column file, typically used to read x, y, σ data
 pub fn read_column_file(filename: &str) -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)> {
     let mut x: Vec<f64> = Vec::new();
     let mut y: Vec<f64> = Vec::new();
