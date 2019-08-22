@@ -1,5 +1,6 @@
 # RUSFUN
 =========
+
  [![Build Status](https://travis-ci.com/DomiDre/rusfun.svg?branch=master)](https://travis-ci.com/DomiDre/rusfun)
  [![](http://meritbadge.herokuapp.com/rusfun)](https://crates.io/crates/rusfun)
  
