@@ -2,6 +2,7 @@ use crate::func1d::Func1D;
 use crate::utils::{matrix_solve, LU_decomp, LU_matrix_solve};
 use ndarray::{s, Array1, Array2};
 
+
 /// Figure of merit that is minimized during the fit procedure
 pub fn chi2(y: &Array1<f64>, ymodel: &Array1<f64>, sy: &Array1<f64>) -> f64 {
     ((y - ymodel) / sy).map(|x| x.powi(2)).sum()
@@ -312,8 +313,13 @@ impl<'a> Minimizer<'a> {
 
     /// Prints report of a performed fit
     pub fn report(&self) {
+
+        // calculate coefficient of determination
+        let R2 = self.calculate_R2();
+
         println!("\t #Chi2:\t{:.6}", self.chi2);
         println!("\t #Red. Chi2:\t{:.6}", self.redchi2);
+        println!("\t #R2:\t{:.6}", R2);
         println!("\t #Func. Evaluations:\t{}", self.num_func_evaluation);
         println!("\t #Converged by:\t{}", self.convergence_message);
         println!("---- Parameters ----");
@@ -330,5 +336,18 @@ impl<'a> Minimizer<'a> {
                 println!("{:.8}", self.minimizer_parameters[i]);
             }
         }
+    }
+
+    /// Calculate the coefficient of determination
+    
+    pub fn calculate_R2(&self) -> f64 {
+        let mean_y = self.y.sum() / self.y.len() as f64;
+        let mut res_sum_sq = 0.0;
+        let mut tot_sum_sq = 0.0;
+        for i in 0..self.y.len() {
+            res_sum_sq += (self.y[i] - self.minimizer_ymodel[i]).powi(2);
+            tot_sum_sq += (self.y[i] - mean_y).powi(2);
+        }
+        1.0 - res_sum_sq / tot_sum_sq
     }
 }
