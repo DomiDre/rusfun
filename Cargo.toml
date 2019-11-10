@@ -1,7 +1,7 @@
 [package]
 name = "rusfun"
 version = "0.3.2"
-authors = ["DomiDre <homiedomi@gmail.com>"]
+authors = ["DomiDre <dominiquedresen@gmail.com>"]
 edition = "2018"
 description = "Little experimental crate to fit simple models to data via WASM in the browser"
 repository = "https://github.com/domidre/rusfun"
