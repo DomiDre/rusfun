@@ -9,6 +9,13 @@ use crate::utils::array1_to_vec;
 
 use wasm_bindgen::prelude::*;
 
+extern crate console_error_panic_hook;
+
+#[wasm_bindgen]
+pub fn init_panic_hook() {
+    console_error_panic_hook::set_once();
+}
+
 /// Translates a string to a implemented function in rusfun to make them easily callable
 pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Array1<f64> {
     match function_name {
@@ -76,7 +83,7 @@ impl FitResult {
     pub fn chi2(&self) -> f64 {
         self.chi2
     }
-    
+
     pub fn redchi2(&self) -> f64 {
         self.redchi2
     }
@@ -90,7 +97,7 @@ impl FitResult {
     }
 }
 
-/// Fit using the LM algorithm for model named model_name using initial 
+/// Fit using the LM algorithm for model named model_name using initial
 /// parameters p, data (x, y, sy), fitting only where there is a non-zero
 /// value in vary_p
 #[wasm_bindgen]

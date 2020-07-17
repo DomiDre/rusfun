@@ -17,6 +17,7 @@ ndarray = "0.12.1"
 gauss-quad = "0.1.2"
 wasm-bindgen = "0.2.49"
 criterion = "0.2"
+console_error_panic_hook = "0.1.6"
 
 [[bench]]
 name = "quick_benchmark"
