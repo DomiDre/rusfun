@@ -20,7 +20,7 @@ pub fn matrix_solve<T>(A: &Array2<T>, b: &Array1<T>) -> Array1<T>
 where
     T: NdFloat,
 {
-    let matrix_dimension = A.rows();
+    let matrix_dimension = A.nrows();
     // solve Ax = b for x, where A is a square matrix
     let (L, U, P) = LU_decomp(A);
     // first solve Ly = Pb
@@ -47,7 +47,7 @@ pub fn LU_matrix_solve<T>(L: &Array2<T>, U: &Array2<T>, P: &Array2<T>, b: &Array
 where
     T: NdFloat,
 {
-    let matrix_dimension = L.rows();
+    let matrix_dimension = L.nrows();
     // first solve Ly = Pb
     let pivotized_b = P.dot(b);
     let mut y: Array1<T> = pivotized_b.clone();
@@ -74,10 +74,10 @@ pub fn LU_decomp<T>(A: &Array2<T>) -> (Array2<T>, Array2<T>, Array2<T>)
 where
     T: NdFloat,
 {
-    let matrix_dimension = A.rows();
+    let matrix_dimension = A.nrows();
     assert_eq!(
         matrix_dimension,
-        A.cols(),
+        A.ncols(),
         "Tried LU decomposition with a non-square matrix."
     );
     let P = pivot(&A);
@@ -108,7 +108,7 @@ fn pivot<T>(A: &Array2<T>) -> Array2<T>
 where
     T: NdFloat,
 {
-    let matrix_dimension = A.rows();
+    let matrix_dimension = A.nrows();
     let mut P: Array2<T> = Array::eye(matrix_dimension);
     for (i, column) in A.axis_iter(Axis(1)).enumerate() {
         // find idx of maximum value in column i

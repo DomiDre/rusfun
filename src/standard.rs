@@ -7,14 +7,12 @@ pub fn zero(_p: &Array1<f64>, x: &Array1<f64>) -> Array1<f64> {
     x.map(|_xval| 0.0)
 }
 
-
 /// Linear function
 /// p = [a, b]
 /// f(x) = a*x + b
 pub fn linear(p: &Array1<f64>, x: &Array1<f64>) -> Array1<f64> {
     x.map(|xval| p[0] * xval + p[1])
 }
-
 
 /// Quadratic function
 /// p = [a, b, c]
@@ -27,9 +25,8 @@ pub fn parabola(p: &Array1<f64>, x: &Array1<f64>) -> Array1<f64> {
 /// p = [A, b, c]
 /// f(x) = A*sqrt(b*x - c)
 pub fn sqrt(p: &Array1<f64>, x: &Array1<f64>) -> Array1<f64> {
-    x.map(|xval| p[0] * (p[1]*xval - p[2]).sqrt())
+    x.map(|xval| p[0] * (p[1] * xval - p[2]).sqrt())
 }
-
 
 /// Cosine function
 /// p = [A, b, c]

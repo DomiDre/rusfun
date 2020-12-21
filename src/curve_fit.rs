@@ -2,7 +2,6 @@ use crate::func1d::Func1D;
 use crate::utils::{matrix_solve, LU_decomp, LU_matrix_solve};
 use ndarray::{s, Array1, Array2};
 
-
 /// Figure of merit that is minimized during the fit procedure
 pub fn chi2(y: &Array1<f64>, ymodel: &Array1<f64>, sy: &Array1<f64>) -> f64 {
     ((y - ymodel) / sy).map(|x| x.powi(2)).sum()
@@ -117,7 +116,7 @@ impl<'a> Minimizer<'a> {
     }
 
     /// Performs a Levenberg Marquardt step
-    /// 
+    ///
     /// determine change to parameters by solving the equation
     /// [J^T W J + lambda diag(J^T W J)] delta = J^T W (y - f)
     /// for delta
@@ -178,7 +177,7 @@ impl<'a> Minimizer<'a> {
             .to_vec()
             .iter()
             .cloned()
-            .fold(0. / 0., f64::max);;
+            .fold(0. / 0., f64::max);
 
         let updated_parameters = &self.minimizer_parameters + &delta_all;
 
@@ -200,7 +199,7 @@ impl<'a> Minimizer<'a> {
     }
 
     /// Fit routine that performs LM steps until one convergence criteria is met
-    /// 
+    ///
     /// Follows the description from http://people.duke.edu/~hpgavin/ce281/lm.pdf
     pub fn minimize(&mut self) {
         let mut iterations = 0;
@@ -313,7 +312,6 @@ impl<'a> Minimizer<'a> {
 
     /// Prints report of a performed fit
     pub fn report(&self) {
-
         // calculate coefficient of determination
         let R2 = self.calculate_R2();
 
@@ -339,7 +337,7 @@ impl<'a> Minimizer<'a> {
     }
 
     /// Calculate the coefficient of determination
-    
+
     pub fn calculate_R2(&self) -> f64 {
         let mean_y = self.y.sum() / self.y.len() as f64;
         let mut res_sum_sq = 0.0;

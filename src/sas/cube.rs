@@ -9,7 +9,7 @@ const FRAC_SQ_PI: f64 = 0.56418958354775628;
 ///
 /// See for example http://gisaxs.com/index.php/Form_Factor:Cube
 fn amplitude(qx: f64, qy: f64, qz: f64, a: f64) -> f64 {
-    a.powi(3) * sinc(0.5*qx * a) * sinc(0.5*qy * a) * sinc(0.5*qz * a)
+    a.powi(3) * sinc(0.5 * qx * a) * sinc(0.5 * qy * a) * sinc(0.5 * qz * a)
 }
 
 /// Simple sinc(x) function to avoid division by zero
@@ -43,7 +43,7 @@ fn theta_integral(q: f64, a: f64, theta: f64, gl_quad: &GaussLegendre) -> f64 {
             a,
         )
         .powi(2)
-    })*sin_theta
+    }) * sin_theta
 }
 
 /// Size distribution integral.
