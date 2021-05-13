@@ -1,6 +1,6 @@
 [package]
 name = "rusfun"
-version = "0.3.3"
+version = "0.3.4"
 authors = ["DomiDre <dominiquedresen@gmail.com>"]
 edition = "2018"
 description = "Little experimental crate to fit simple models to data via WASM in the browser"
@@ -13,7 +13,7 @@ license = "MIT"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-ndarray = "0.14"
+ndarray = "0.15"
 gauss-quad = "0.1"
 wasm-bindgen = "0.2"
 criterion = "0.3"

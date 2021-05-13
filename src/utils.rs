@@ -139,7 +139,7 @@ where
         .view_mut()
         .split_at(Axis(0), idx_row2 - idx_row1 - 1);
     let (row1, ..) = matrix_rest.view_mut().split_at(Axis(0), 1);
-    Zip::from(row0).and(row1).apply(std::mem::swap);
+    Zip::from(row0).and(row1).for_each(std::mem::swap);
 }
 
 /// Reads three-column file, typically used to read x, y, σ data
