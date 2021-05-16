@@ -2,7 +2,7 @@
 extern crate criterion;
 
 use criterion::Criterion;
-use ndarray::{array, Array1};
+use ndarray::{Array1};
 // use rulinalg::vector::Vector;
 
 fn calc_with_array() -> f64 {
