@@ -17,6 +17,3 @@ pub mod utils;
 
 /// Interface module to enable the call of Rust functions using WASM
 pub mod wasm;
-
-/// Small-Angle Scattering Module containg form factors for different shapes
-pub mod sas;

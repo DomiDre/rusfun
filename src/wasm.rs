@@ -2,7 +2,6 @@ use ndarray::Array1;
 
 use crate::curve_fit;
 use crate::func1d;
-use crate::sas::*;
 use crate::size_distribution;
 use crate::standard;
 use crate::utils::array1_to_vec;
@@ -27,8 +26,6 @@ pub fn get_function(function_name: &str) -> fn(&Array1<f64>, &Array1<f64>) -> Ar
         "tan" => standard::tan,
         "exp" => standard::exp,
         "gaussian" => size_distribution::gaussian,
-        "sas_sphere" => sphere::formfactor,
-        "sas_cube" => cube::formfactor,
         _ => standard::zero,
     }
 }
