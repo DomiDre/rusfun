@@ -64,9 +64,18 @@ impl<'a> Minimizer<'a> {
         vary_parameter: &'b Array1<bool>,
         lambda: f64,
     ) -> Minimizer<'b> {
+        assert_eq!(vary_parameter.len(), model.parameters.len());
+        assert_eq!(y.len(), sy.len());
+        assert_eq!(y.len(), model.domain.len());
+
         // at initialization
         let initial_parameters = model.parameters.clone();
         let minimizer_ymodel = model.for_parameters(&initial_parameters);
+        assert_eq!(
+            minimizer_ymodel.len(),
+            y.len(),
+            "model function must return an array of equal length"
+        );
 
         // calculate number of parameters that are being varied
         let num_varying_params = vary_parameter
